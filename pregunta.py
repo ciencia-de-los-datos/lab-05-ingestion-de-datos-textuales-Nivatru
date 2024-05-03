@@ -1,19 +1,19 @@
 import os
-import csv
+import pandas as pd
 
 def create_dataset_csv(base_path, output_filename):
-    with open(output_filename, 'w', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ['phrase', 'sentiment']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        for sentiment in ['negative', 'positive', 'neutral']:
-            sentiment_path = os.path.join(base_path, sentiment)
-            for entry in os.scandir(sentiment_path):
-                if entry.is_file():
-                    file_path = entry.path
-                    with open(file_path, 'r', encoding='utf-8') as file:
-                        phrase = file.read().strip()
-                    writer.writerow({'phrase': phrase, 'sentiment': sentiment})
+    df = pd.DataFrame(columns=['phrase', 'sentiment'])
+    for sentiment in ['negative', 'positive', 'neutral']:
+        sentiment_path = os.path.join(base_path, sentiment)
+        for filename in os.listdir(sentiment_path):
+            file_path = os.path.join(sentiment_path, filename)
+            with open(file_path, 'r') as file:
+                for line in file:
+                    phrase = line.strip()
+                    df = df._append({'phrase': phrase, 'sentiment': sentiment}, ignore_index=True)
+    df = df[df.groupby('sentiment').cumcount() > 0]
+    df.to_csv(output_filename, index=False)
 
 create_dataset_csv('train', 'train_dataset.csv')
 create_dataset_csv('test', 'test_dataset.csv')
+
